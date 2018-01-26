@@ -38,38 +38,115 @@ struct XInfo {
 class Displayable {
 public:
     virtual void paint(XInfo& xinfo) = 0;
+    virtual void translate(int x, int y) = 0;
+    virtual void changeLevel(string newString) = 0;
+    virtual void move(string direction, XInfo& xinfo, int level_number) = 0;
+    virtual int getX() = 0;
+    virtual int getY() = 0;
+    virtual int getWidth() = 0;
+    virtual int getHeight() = 0;
+
 };
 
 // A rectangle displayable
 class Rectangle : public Displayable {
 public:
     virtual void paint(XInfo& xinfo) {
-        XFillRectangle(xinfo.display, xinfo.window, xinfo.gc, this->x, this->y, this->width, this->height);
+        if (x > 850 - width) {
+            XFillRectangle(xinfo.display, d, xinfo.gc, -(850- x), y, width, height);
+        }
+        else if (x < 0) {
+            XFillRectangle(xinfo.display, d, xinfo.gc, 850 + x, y, width, height);
+        }
+        XFillRectangle(xinfo.display, d, xinfo.gc, x, y, width, height);
     }
 
-    Rectangle(int x, int y, int width, int height): x(x), y(y), width(width), height(height) {}
+    Rectangle(int x, int y, int width, int height, Drawable d): x(x), y(y), width(width), height(height), d(d) {}
+
+    virtual void translate(int newX, int newY) {
+        x = newX;
+        y = newY;
+    }
+    virtual void move(string direction, XInfo& xinfo, int level_number) {
+        if (direction == "right") {
+            if (x < 850) {
+                x += level_number;
+            }
+            else x = 0;
+        }
+        else if (direction == "left") {
+            if (x > 0 - width) {
+                x -= level_number;
+            }
+            else x = 850 - width;
+        }
+    }
+
+    virtual void changeLevel(string newString) {}
+
+    virtual int getX() {
+        return x;
+    }
+
+    virtual int getY() {
+        return y;
+    }
+
+    virtual int getWidth() {
+        return width;
+    }
+
+    virtual int getHeight() {
+        return height;
+    }
 
 private:
     int x;
     int y;
     int width;
     int height;
+    Drawable d;
 };
 
 class Text : public Displayable {
 public:
     virtual void paint(XInfo& xinfo) {
-        XDrawImageString( xinfo.display, xinfo.window, xinfo.gc,
-                          this->x, this->y, this->s.c_str(), this->s.length() );
+        XDrawImageString( xinfo.display, d, xinfo.gc, x, y, s.c_str(), s.length() );
     }
 
     // constructor
-    Text(int x, int y, string s): x(x), y(y), s(s)  {}
+    Text(int x, int y, string s, Drawable d): x(x), y(y), s(s), d(d)  {}
+
+    virtual void translate(int newX, int newY) {
+        x = newX;
+        y = newY;
+    }
+
+    virtual void move(string direction, XInfo& xinfo, int level_number) { }
+
+    void changeLevel(string newString) {
+        s = newString;
+    }
+
+    virtual int getX() {
+        return x;
+    }
+
+    virtual int getY() {
+        return y;
+    }
+
+    virtual int getWidth() {
+    }
+
+    virtual int getHeight() {
+    }
 
 private:
     int x;
     int y;
     string s; // string to show
+    Drawable d;
 };
 
 // Function to put out a message on error exits.
@@ -78,17 +155,46 @@ void error( string str ) {
     exit(0);
 }
 
+struct Point {
+    int x, y;
+};
+
+bool checkCollision(Point left1, Point left2, Point right1, Point right2)
+{
+    if (left1.x >= right2.x || right1.x >= left2.x || left2.y <= right1.y || right2.y <= left1.y) {
+        return false;
+    }
+    return true;
+}
+
 // The loop responding to events from the user.
 void eventloop(XInfo& xinfo, XWindowAttributes& w, Pixmap& buffer) {
     int frogX = 400;
     int frogY = 200;
+    int level_number = 1;
 
     XEvent event;
     KeySym key;
     char text[BufferSize];
-    list<Displayable*> dList;
-    dList.push_back(new Text(50, 50, "Level: 1"));
-    dList.push_back(new Rectangle(frogX, frogY, 50, 50));
+    vector<Displayable*> dList;
+    dList.push_back(new Text(w.width - 80, 25, "Level: 1", buffer));
+    dList.push_back(new Rectangle(frogX, frogY, 50, 50, buffer));
+    Displayable* level = dList[0];
+    Displayable* frog = dList[1];
+
+    // Add all the moving blocks
+    dList.push_back(new Rectangle(0, 50, 50, 50, buffer));
+    dList.push_back(new Rectangle(200, 50, 50, 50, buffer));
+    dList.push_back(new Rectangle(400, 50, 50, 50, buffer));
+
+    dList.push_back(new Rectangle(0, 100, 20, 50, buffer));
+    dList.push_back(new Rectangle(200, 100, 20, 50, buffer));
+    dList.push_back(new Rectangle(400, 100, 20, 50, buffer));
+    dList.push_back(new Rectangle(600, 100, 20, 50, buffer));
+
+    dList.push_back(new Rectangle(0, 150, 100, 50, buffer));
+    dList.push_back(new Rectangle(400, 150, 100, 50, buffer));
+
 
     while ( true ) {
         unsigned long end = now();
@@ -103,9 +209,43 @@ void eventloop(XInfo& xinfo, XWindowAttributes& w, Pixmap& buffer) {
             XSetForeground(xinfo.display, xinfo.gc, WhitePixel(xinfo.display, DefaultScreen(xinfo.display)));
             XFillRectangle(xinfo.display, pixmap, xinfo.gc, 0, 0, w.width, w.height);
 
+            for (int i = 2; i <= 10; i++) {
+                Point point1 = {frogX, frogY};
+                Point point2 = {frogX + 50, frogY + 50};
+                Point point3 = {dList[i]->getX(), dList[i]->getY()};
+                Point point4 = {point3.x + dList[i]->getWidth(), point3.y + dList[i]->getHeight()};
+                if (checkCollision(point1, point2, point3, point4)) {
+                    frogX = 400;
+                    frogY = 200;
+                    level_number = 1;
+                    level->changeLevel("Level: " + to_string(level_number));
+                    frog->translate(frogX, frogY);
+                } else if (dList[i]->getX() > (850 - dList[i]->getWidth())) {
+                    point3 = {-(850 - dList[i]->getX()), dList[i]->getY()};
+                    point4 = {point3.x + dList[i]->getWidth(), point3.y + dList[i]->getHeight()};
+                    checkCollision(point1, point2, point3, point4);
+                }
+                else if (dList[i]->getX() < 0) {
+                    point3 = {850 + dList[i]->getX(), dList[i]->getY()};
+                    point4 = {point3.x + dList[i]->getWidth(), point3.y + dList[i]->getHeight()};
+                    checkCollision(point1, point2, point3, point4);
+                }
+                if ((i >= 5) && (i <= 8)) {
+                    dList[i]->move("left", xinfo, level_number);
+                }
+                else {
+                    dList[i]->move("right", xinfo, level_number);
+                }
+            }
+
             XSetForeground(xinfo.display, xinfo.gc, BlackPixel(xinfo.display, DefaultScreen(xinfo.display)));
-            XDrawImageString(xinfo.display, pixmap, xinfo.gc, w.width - 80, 25, "Level: 1", 8);
-            XFillRectangle(xinfo.display, pixmap, xinfo.gc, frogX, frogY, 50, 50);
+            auto begin = dList.begin();
+            auto end = dList.end();
+            while (  begin != end ) {
+                Displayable* d = *begin;
+                d->paint(xinfo);
+                begin++;
+            }
 
             XCopyArea(xinfo.display, pixmap, xinfo.window, xinfo.gc,
                       0, 0, w.width, w.height,  // region of pixmap to copy
@@ -138,49 +278,58 @@ void eventloop(XInfo& xinfo, XWindowAttributes& w, Pixmap& buffer) {
                         return;
                     }
 
+                    if (frogY == 0 && i == 1 && text[0] == 'n') {
+                        frogX = 400;
+                        frogY = 200;
+                        level_number++;
+                        level->changeLevel("Level: " + to_string(level_number));
+                        frog->translate(frogX, frogY);
+                    }
+
                     switch(key){
                         case XK_Up:
                             cout << "Up" << endl;
-                            dList.pop_back();
                             if( frogY - 50 >= 0 ) {
                                 frogY -= 50;
                             }
                             else {
                                 cout << "Out of Bounds (Y Axis)" << endl;
                             }
-                            dList.push_back(new Rectangle(frogX, frogY , 50, 50));
+                            frog->translate(frogX, frogY);
+                            cout << "Current Position:" << frogX << ", " << frogY << endl;
                             break;
                         case XK_Down:
                             cout << "Down" << endl;
-                            dList.pop_back();
-                            if( frogY + 50 < w.height ) {
+                            if( frogY != 0 && frogY + 50 < w.height ) {
                                 frogY += 50;
                             }
                             else {
                                 cout << "Out of Bounds (Y Axis)" << endl;
                             }
-                            dList.push_back(new Rectangle(frogX, frogY , 50, 50));
+                            frog->translate(frogX, frogY);
+                            cout << "Current Position:" << frogX << ", " << frogY << endl;
                             break;
                         case XK_Left:
                             cout << "Left" << endl;
-                            dList.pop_back();
+
                             if( frogX - 50 >= 0 ) {
                                 frogX -= 50;                            }
                             else {
                                 cout << "Out of Bounds (X Axis)" << endl;
                             }
-                            dList.push_back(new Rectangle(frogX, frogY , 50, 50));
+                            frog->translate(frogX, frogY);
+                            cout << "Current Position:" << frogX << ", " << frogY << endl;
                             break;
                         case XK_Right:
                             cout << "Right" << endl;
-                            dList.pop_back();
                             if( frogX + 50 < w.width ) {
                                 frogX += 50;
                             }
                             else {
                                 cout << "Out of Bounds (Y Axis)" << endl;
                             }
-                            dList.push_back(new Rectangle(frogX, frogY , 50, 50));
+                            frog->translate(frogX, frogY);
+                            cout << "Current Position:" << frogX << ", " << frogY << endl;
                             break;
                     }
 
