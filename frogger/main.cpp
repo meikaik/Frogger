@@ -220,15 +220,29 @@ void eventloop(XInfo& xinfo, XWindowAttributes& w, Pixmap& buffer) {
                     level_number = 1;
                     level->changeLevel("Level: " + to_string(level_number));
                     frog->translate(frogX, frogY);
-                } else if (dList[i]->getX() > (850 - dList[i]->getWidth())) {
+                }
+                if (dList[i]->getX() > (850 - dList[i]->getWidth())) {
                     point3 = {-(850 - dList[i]->getX()), dList[i]->getY()};
                     point4 = {point3.x + dList[i]->getWidth(), point3.y + dList[i]->getHeight()};
-                    checkCollision(point1, point2, point3, point4);
+                    if (checkCollision(point1, point2, point3, point4)){
+                        frogX = 400;
+                        frogY = 200;
+                        level_number = 1;
+                        level->changeLevel("Level: " + to_string(level_number));
+                        frog->translate(frogX, frogY);
+                    }
+
                 }
-                else if (dList[i]->getX() < 0) {
+                if (dList[i]->getX() < 0) {
                     point3 = {850 + dList[i]->getX(), dList[i]->getY()};
                     point4 = {point3.x + dList[i]->getWidth(), point3.y + dList[i]->getHeight()};
-                    checkCollision(point1, point2, point3, point4);
+                    if (checkCollision(point1, point2, point3, point4)){
+                        frogX = 400;
+                        frogY = 200;
+                        level_number = 1;
+                        level->changeLevel("Level: " + to_string(level_number));
+                        frog->translate(frogX, frogY);
+                    }
                 }
                 if ((i >= 5) && (i <= 8)) {
                     dList[i]->move("left", xinfo, level_number);
