@@ -1,10 +1,13 @@
 //
-// Created by Mei Kai Koh on 2018-01-26.
+// Created by Mei Kai Kohs
 //
 
 #include "Displayable.h"
+#include <iostream>
 
+Displayable::~Displayable() {}
 // A rectangle displayable
+
 void Rectangle::paint(XInfo& xinfo) {
         if (x > 850 - width) {
             XFillRectangle(xinfo.display, d, xinfo.gc, x - 850, y, width, height);
@@ -16,6 +19,8 @@ void Rectangle::paint(XInfo& xinfo) {
 }
 
 Rectangle::Rectangle(int x, int y, int width, int height, Drawable d): x(x), y(y), width(width), height(height), d(d) {}
+Rectangle::~Rectangle(){}
+
 
 void Rectangle::translate(int newX, int newY) {
     x = newX;
@@ -60,6 +65,7 @@ void Text::paint(XInfo& xinfo) {
 }
 
 Text::Text(int x, int y, string s, Drawable d): x(x), y(y), s(s), d(d)  {}
+Text::~Text(){}
 
 void Text::translate(int newX, int newY) {
     x = newX;
@@ -76,4 +82,12 @@ int Text::getX() {
 
 int Text::getY() {
     return y;
+}
+
+int Text::getWidth() {
+    return 0;
+}
+
+int Text::getHeight() {
+    return 0;
 }

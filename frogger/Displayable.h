@@ -1,5 +1,5 @@
 //
-// Created by Mei Kai Koh on 2018-01-26.
+// Created by Mei Kai Koh
 //
 
 #ifndef FROGGER_DISPLAYABLE_H
@@ -12,14 +12,15 @@ using namespace std;
 
 class Displayable {
 public:
+    virtual ~Displayable();
     virtual void paint(XInfo& xinfo) = 0;
     virtual void translate(int x, int y) = 0;
     virtual void changeLevel(string newString) = 0;
     virtual void move(string direction, XInfo& xinfo, int level_number) {}
     virtual int getX() = 0;
     virtual int getY() = 0;
-    virtual int getWidth() {}
-    virtual int getHeight() {}
+    virtual int getWidth() = 0;
+    virtual int getHeight() = 0;
 
 };
 
@@ -29,6 +30,7 @@ public:
     virtual void paint(XInfo& xinfo);
 
     Rectangle(int x, int y, int width, int height, Drawable d);
+    ~Rectangle();
 
     virtual void translate(int newX, int newY);
     virtual void move(string direction, XInfo& xinfo, int level_number);
@@ -51,12 +53,14 @@ public:
     virtual void paint(XInfo& xinfo);
 
     Text(int x, int y, string s, Drawable d);
+    ~Text();
 
     virtual void translate(int newX, int newY);
     void changeLevel(string newString);
     virtual int getX();
     virtual int getY();
-
+    virtual int getWidth();
+    virtual int getHeight();
 private:
     int x;
     int y;

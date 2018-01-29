@@ -7,4 +7,4 @@ find_package(X11 REQUIRED)
 link_libraries(${X11_LIBRARIES})
 include_directories(${X11_INCLUDE_DIR})
 
-add_executable(frogger main.cpp)
+add_executable(frogger a1-enhanced.cpp XInfo.cpp XInfo.h Displayable.cpp Displayable.h)

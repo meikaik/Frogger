@@ -1,5 +1,5 @@
 //
-// Created by Mei Kai Koh on 2018-01-26.
+// Created by Mei Kai Koh
 //
 
 #include "XInfo.h"
