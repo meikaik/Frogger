@@ -1,5 +1,5 @@
 //
-// Created by Mei Kai Kohs
+// Created by Mei Kai Koh
 //
 
 #include "Displayable.h"

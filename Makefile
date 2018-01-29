@@ -19,4 +19,4 @@ run60: all
 	@echo "Running..."
 	./${EXEC} 60
 clean :
-	-rm *o *d
+	-rm *o *d frogger
